@@ -1,0 +1,358 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1"><style>:root{color-scheme:light}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<!DOCTYPE html>
+<html lang="tr" data-bs-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gizli Şifre ve Casus</title>
+<style>
+*,*::before,*::after{box-sizing:border-box}
+html{color-scheme:dark}
+body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;color:#e6e8f2;line-height:1.5;font-size:1rem}
+h1,h4,h5{margin:0 0 .5rem;line-height:1.2}
+h1{font-size:1.75rem}h4{font-size:1.4rem}h5{font-size:1.15rem}
+p{margin:0 0 1rem}
+b{font-weight:700}
+.container{width:100%;margin:0 auto;padding-left:16px;padding-right:16px}
+.py-4{padding-top:1.5rem;padding-bottom:1.5rem}
+.text-center{text-align:center}.text-uppercase{text-transform:uppercase}
+.small{font-size:.875rem}.fs-4{font-size:1.4rem}.display-6{font-size:2rem;font-weight:300;line-height:1.2}
+.text-secondary{color:#9aa0b8}.text-info{color:#4dd0f0}.text-warning{color:#ffc107}.text-danger{color:#ff6b7a}
+.mb-1{margin-bottom:.25rem}.mb-2{margin-bottom:.5rem}.mb-3{margin-bottom:1rem}.mb-4{margin-bottom:1.5rem}.mt-2{margin-top:.5rem}
+.p-2{padding:.5rem}.p-3{padding:1rem}.p-4{padding:1.5rem}.py-2{padding-top:.5rem;padding-bottom:.5rem}
+.w-100{width:100%}
+.card{border-radius:12px;display:block}
+.alert{padding:.5rem 1rem;border-radius:8px;margin-bottom:1rem}
+.alert-warning{background:#3a3012;border:1px solid #6b5a1c;color:#ffe08a}
+.border-danger{border-color:#dc3545!important}
+.form-control{display:block;width:100%;padding:.6rem .75rem;font-size:1rem;color:#e6e8f2;background:#0f1222;border:1px solid #333a5c;border-radius:8px;outline:none;font-family:inherit}
+.form-control:focus{border-color:#6c7bff;box-shadow:0 0 0 3px rgba(108,123,255,.25)}
+.form-control::placeholder{color:#7b819c}
+.input-group{display:flex;width:100%}
+.input-group>.form-control{flex:1 1 auto;width:1%;min-width:0;border-top-right-radius:0;border-bottom-right-radius:0}
+.input-group>.btn{border-top-left-radius:0;border-bottom-left-radius:0}
+.btn{display:inline-block;padding:.6rem 1rem;font-size:1rem;font-weight:600;font-family:inherit;line-height:1.4;text-align:center;color:#fff;background:#3a4066;border:1px solid transparent;border-radius:8px;cursor:pointer}
+.btn:active{transform:scale(.98)}
+.btn-sm{padding:.3rem .7rem;font-size:.85rem}
+.btn-primary{background:#4f6bff}.btn-success{background:#1f9d57}.btn-danger{background:#dc3545}
+.btn-outline-info{background:transparent;color:#4dd0f0;border-color:#4dd0f0}
+.btn-outline-light{background:transparent;color:#e6e8f2;border-color:#8890b0}
+.row{display:flex;flex-wrap:wrap;margin:0 -4px}
+.row.g-2>*{padding:4px}
+.col-6{flex:0 0 auto;width:50%}.offset-3{margin-left:25%}
+</style>
+<style>
+  body { background: #0d0f1a; min-height: 100vh; }
+  .card { background: #161a2b; border: 1px solid #262c47; }
+  .stroop-word { font-size: 4rem; font-weight: 800; letter-spacing: 2px; text-align: center; padding: 1.5rem 0; }
+  .color-btn { height: 64px; font-weight: 700; border: 0; color: #fff; text-shadow: 0 1px 3px rgba(0,0,0,.6); }
+  .color-btn:disabled { opacity: .3; }
+  .role-card { cursor: pointer; user-select: none; }
+  .clue-chip { background: #222845; border-radius: 20px; padding: 4px 12px; display: inline-block; margin: 3px; }
+  h1 { font-weight: 800; }
+</style>
+</head>
+<body>
+<div class="container py-4" style="max-width: 520px;">
+  <h1 class="text-center mb-1">🎭 Gizli Şifre ve Casus</h1>
+  <p class="text-center text-secondary small mb-4">Köylüler kelimeyi bilir. Vampir bilmez. Blöf yap, ayıkla!</p>
+  <div id="app"></div>
+</div>
+
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<script>
+/* ================= AYARLAR ================= */
+const COLORS = [
+  { name: 'KIRMIZI', hex: '#ef4444' },
+  { name: 'MAVİ',    hex: '#3b82f6' },
+  { name: 'YEŞİL',   hex: '#22c55e' },
+  { name: 'SARI',    hex: '#eab308' },
+  { name: 'MOR',     hex: '#a855f7' },
+];
+const WORDS = ['KUTUP AYISI','LOKOMOTİF','PİRAMİT','ASTRONOT','PİZZA','DENİZALTI','ÇÖL','ORMAN','KÜTÜPHANE','OKYANUS',
+  'DİŞ FIRÇASI','HAYALET','SİRK','VOLKAN','MUMYA','PARAŞÜT','BUZDOLABI','FENER','ROBOT','KAPLUMBAĞA'];
+const TOTAL_ROUNDS = 3;
+const PREFIX = 'gsc-';
+
+/* ================= DURUM ================= */
+let peer = null, hostConn = null;
+let isHost = false, myId = null, myName = '', roomCode = '';
+let S = { phase: 'lobby', players: [] };       // herkese açık durum
+let myRole = null, myWord = null, revealed = false;
+let errMsg = '';
+
+// Sadece host'ta
+let players = {};      // id -> {name, conn}
+let vampireId = null, secretWord = '';
+let locked = new Set(), votes = {}, round = 0, clues = [], pub = {};
+
+const $app = document.getElementById('app');
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const norm = s => String(s).toLocaleLowerCase('tr').replace(/\s+/g, ' ').trim();
+const pick = a => a[Math.floor(Math.random() * a.length)];
+
+/* ================= AĞ ================= */
+function sendTo(id, msg) {
+  if (id === 'host') return onMsg(msg);
+  const p = players[id];
+  if (p && p.conn && p.conn.open) p.conn.send(msg);
+}
+function broadcast() {
+  pub = {
+    phase: pub.phase || 'lobby',
+    players: Object.entries(players).map(([id, p]) => ({ id, name: p.name })),
+    round, total: TOTAL_ROUNDS, stroop: pub.stroop, winnerId: pub.winnerId,
+    locked: [...locked], clues, voted: Object.keys(votes), result: pub.result, note: pub.note || ''
+  };
+  Object.keys(players).forEach(id => sendTo(id, { t: 'state', s: pub }));
+}
+function send(msg) { // client -> host
+  if (isHost) handle('host', msg); else if (hostConn && hostConn.open) hostConn.send(msg);
+}
+
+function createRoom() {
+  myName = document.getElementById('name').value.trim();
+  if (!myName) return setErr('Önce bir isim yaz.');
+  roomCode = Math.random().toString(36).slice(2, 7).toUpperCase();
+  peer = new Peer(PREFIX + roomCode);
+  peer.on('open', () => {
+    isHost = true; myId = 'host';
+    players['host'] = { name: myName, conn: null };
+    pub = { phase: 'lobby' };
+    broadcast();
+  });
+  peer.on('error', e => {
+    if (e.type === 'unavailable-id') { peer.destroy(); createRoom(); }
+    else setErr('Bağlantı hatası: ' + e.type);
+  });
+  peer.on('connection', conn => {
+    conn.on('data', m => handle(conn.peer, m, conn));
+    conn.on('close', () => onLeave(conn.peer));
+  });
+}
+
+function joinRoom() {
+  myName = document.getElementById('name').value.trim();
+  const code = document.getElementById('code').value.trim().toUpperCase();
+  if (!myName) return setErr('Önce bir isim yaz.');
+  if (!code) return setErr('Oda kodunu yaz.');
+  roomCode = code;
+  setErr('Bağlanıyor...');
+  peer = new Peer();
+  peer.on('open', id => {
+    myId = id;
+    hostConn = peer.connect(PREFIX + code, { reliable: true });
+    hostConn.on('open', () => hostConn.send({ t: 'join', name: myName }));
+    hostConn.on('data', onMsg);
+    hostConn.on('close', () => { S = { phase: 'lobby', players: [] }; myRole = null; setErr('Host bağlantısı koptu.'); });
+  });
+  peer.on('error', e => setErr(e.type === 'peer-unavailable' ? 'Oda bulunamadı.' : 'Hata: ' + e.type));
+}
+
+function onLeave(id) {
+  if (!players[id]) return;
+  const wasVampire = id === vampireId;
+  delete players[id]; delete votes[id]; locked.delete(id);
+  if (pub.phase === 'lobby') return broadcast();
+  if (wasVampire && pub.phase !== 'result') return endGame('koylu', 'Vampir oyundan ayrıldı!');
+  if (pub.phase === 'clue' && pub.winnerId === id) return startColor('İpucu verecek kişi ayrıldı, tur yenilendi.');
+  if (pub.phase === 'vote') return checkVotes();
+  broadcast();
+}
+
+/* ================= HOST MANTIĞI ================= */
+function handle(from, m, conn) {
+  switch (m.t) {
+    case 'join':
+      if (pub.phase !== 'lobby') return conn.send({ t: 'err', msg: 'Oyun başladı, katılamazsın.' });
+      players[from] = { name: String(m.name).slice(0, 16), conn };
+      conn.send({ t: 'joined' });
+      broadcast();
+      break;
+    case 'start':
+      if (from === 'host') startGame();
+      break;
+    case 'ans':
+      if (pub.phase !== 'color' || pub.winnerId || locked.has(from)) return;
+      if (m.c === pub.stroop.i) { pub.winnerId = from; pub.phase = 'clue'; pub.note = ''; }
+      else {
+        locked.add(from);
+        if (locked.size >= Object.keys(players).length) return startColor('Kimse bilemedi, yeni soru!');
+      }
+      broadcast();
+      break;
+    case 'clue': {
+      if (pub.phase !== 'clue' || from !== pub.winnerId) return;
+      const text = String(m.text).trim().slice(0, 30);
+      if (!text) return;
+      clues.push({ name: players[from].name, text });
+      round++;
+      if (round >= TOTAL_ROUNDS) { pub.phase = 'vote'; votes = {}; pub.winnerId = null; broadcast(); }
+      else startColor('');
+      break;
+    }
+    case 'vote':
+      if (pub.phase !== 'vote' || votes[from] || !players[m.target] || m.target === from) return;
+      votes[from] = m.target;
+      checkVotes();
+      break;
+    case 'guess':
+      if (pub.phase !== 'vote' || from !== vampireId) return;
+      if (norm(m.text) === norm(secretWord)) endGame('vampir', 'Vampir gizli kelimeyi doğru tahmin etti!');
+      else endGame('koylu', 'Vampir yanlış tahmin etti: "' + String(m.text).slice(0, 30) + '"');
+      break;
+    case 'restart':
+      if (from === 'host') { pub = { phase: 'lobby' }; round = 0; clues = []; votes = {}; locked = new Set(); broadcast();
+        Object.keys(players).forEach(id => sendTo(id, { t: 'role', role: null, word: null })); }
+      break;
+  }
+}
+
+function startGame() {
+  const ids = Object.keys(players);
+  if (ids.length < 3) return setErr('En az 3 oyuncu gerekli.');
+  vampireId = pick(ids);
+  secretWord = pick(WORDS);
+  round = 0; clues = []; votes = {};
+  ids.forEach(id => sendTo(id, id === vampireId
+    ? { t: 'role', role: 'vampir', word: null }
+    : { t: 'role', role: 'koylu', word: secretWord }));
+  startColor('');
+}
+
+function startColor(note) {
+  const ink = Math.floor(Math.random() * COLORS.length);
+  let w; do { w = Math.floor(Math.random() * COLORS.length); } while (w === ink);
+  locked = new Set();
+  pub.phase = 'color'; pub.winnerId = null; pub.note = note; pub.stroop = { w, i: ink };
+  broadcast();
+}
+
+function checkVotes() {
+  const ids = Object.keys(players);
+  if (Object.keys(votes).length < ids.length) return broadcast();
+  const cnt = {};
+  Object.values(votes).forEach(t => cnt[t] = (cnt[t] || 0) + 1);
+  const max = Math.max(...Object.values(cnt));
+  const top = Object.keys(cnt).filter(k => cnt[k] === max);
+  if (top.length === 1 && top[0] === vampireId) endGame('koylu', 'Vampir oylarla yakalandı!');
+  else if (top.length > 1) endGame('vampir', 'Oylar eşit çıktı, vampir kurtuldu!');
+  else endGame('vampir', 'Köylüler yanlış kişiyi eledi: ' + players[top[0]].name);
+}
+
+function endGame(winner, reason) {
+  pub.phase = 'result';
+  pub.result = { winner, reason, vampire: players[vampireId] ? players[vampireId].name : '?', word: secretWord };
+  broadcast();
+}
+
+/* ================= İSTEMCİ ================= */
+function onMsg(m) {
+  if (m.t === 'state') { S = m.s; errMsg = ''; }
+  else if (m.t === 'role') { myRole = m.role; myWord = m.word; revealed = false; }
+  else if (m.t === 'err') errMsg = m.msg;
+  render();
+}
+function setErr(t) { errMsg = t; render(); }
+
+function render() {
+  const keepName = document.getElementById('name')?.value, keepCode = document.getElementById('code')?.value;
+  const keepClue = document.getElementById('clue')?.value, keepGuess = document.getElementById('guess')?.value;
+  let h = '';
+  if (errMsg) h += `<div class="alert alert-warning py-2">${esc(errMsg)}</div>`;
+  if (!myId || !S.players.length) h += viewEntry();
+  else if (S.phase === 'lobby') h += viewLobby();
+  else h += viewGame();
+  $app.innerHTML = h;
+  const set = (id, v) => { const el = document.getElementById(id); if (el && v != null) el.value = v; };
+  set('name', keepName); set('code', keepCode); set('clue', keepClue); set('guess', keepGuess);
+}
+
+function viewEntry() {
+  const urlCode = new URLSearchParams(location.search).get('oda') || '';
+  return `<div class="card p-3">
+    <input id="name" class="form-control mb-3" placeholder="İsmin" maxlength="16">
+    <button class="btn btn-primary w-100 mb-3" onclick="createRoom()">🏠 Oda Kur</button>
+    <div class="input-group">
+      <input id="code" class="form-control text-uppercase" placeholder="Oda kodu" value="${esc(urlCode)}">
+      <button class="btn btn-success" onclick="joinRoom()">Katıl</button>
+    </div></div>`;
+}
+
+function viewLobby() {
+  const link = location.href.split('?')[0] + '?oda=' + roomCode;
+  let h = `<div class="card p-3"><h5>Oda: <span class="text-info">${esc(roomCode)}</span></h5>`;
+  if (isHost) h += `<button class="btn btn-sm btn-outline-info mb-3" onclick="navigator.clipboard.writeText('${esc(link)}');this.textContent='Kopyalandı ✓'">🔗 Davet linkini kopyala</button>`;
+  h += `<div class="mb-3">${S.players.map(p => `<span class="clue-chip">${esc(p.name)}${p.id === 'host' ? ' 👑' : ''}</span>`).join('')}</div>`;
+  h += isHost
+    ? `<button class="btn btn-danger w-100" onclick="send({t:'start'})">▶ Oyunu Başlat (${S.players.length} kişi)</button>`
+    : `<div class="text-secondary text-center">Host'un başlatması bekleniyor...</div>`;
+  return h + '</div>';
+}
+
+function roleCard() {
+  if (!myRole) return '';
+  const body = !revealed ? 'Görmek için dokun 👆'
+    : myRole === 'vampir' ? '🧛 Sen CASUSSUN! Kelimeyi tahmin etmeye çalış!'
+    : `🧑‍🌾 Gizli kelime: <b class="fs-4">${esc(myWord)}</b>`;
+  return `<div class="card role-card p-2 text-center mb-3" onclick="revealed=!revealed;render()">${body}</div>`;
+}
+
+function cluesView() {
+  if (!S.clues || !S.clues.length) return '';
+  return `<div class="mb-3"><div class="small text-secondary">İpuçları</div>${S.clues.map(c => `<span class="clue-chip"><b>${esc(c.name)}:</b> ${esc(c.text)}</span>`).join('')}</div>`;
+}
+
+function nameOf(id) { const p = S.players.find(p => p.id === id); return p ? p.name : '?'; }
+
+function viewGame() {
+  let h = roleCard();
+  if (S.phase === 'color') {
+    const lockedMe = S.locked.includes(myId);
+    h += `<div class="card p-3 mb-3">
+      <div class="text-secondary small text-center">Tur ${S.round + 1}/${S.total} — Kelimeyi değil, YAZILDIĞI RENGİ seç!</div>
+      ${S.note ? `<div class="text-warning text-center small">${esc(S.note)}</div>` : ''}
+      <div class="stroop-word" style="color:${COLORS[S.stroop.i].hex}">${COLORS[S.stroop.w].name}</div>
+      <div class="row g-2">${COLORS.map((c, i) => `<div class="col-6 ${i === 4 ? 'offset-3' : ''}">
+        <button class="btn color-btn w-100" style="background:${c.hex}" ${lockedMe ? 'disabled' : ''} onclick="send({t:'ans',c:${i}})">${c.name}</button></div>`).join('')}</div>
+      ${lockedMe ? '<div class="text-danger text-center mt-2">Yanlış bastın, bu turda elendin!</div>' : ''}
+    </div>` + cluesView();
+  } else if (S.phase === 'clue') {
+    h += `<div class="card p-3 mb-3 text-center">`;
+    if (S.winnerId === myId) {
+      h += `<div class="mb-2">🏆 Turu sen kazandın! Herkese bir ipucu ver${myRole === 'vampir' ? ' (blöf yapma zamanı 😈)' : ''}:</div>
+        <div class="input-group"><input id="clue" class="form-control" maxlength="30" placeholder="Tek kelime ipucu">
+        <button class="btn btn-primary" onclick="sendClue()">Gönder</button></div>`;
+    } else h += `<div>🏆 <b>${esc(nameOf(S.winnerId))}</b> turu kazandı, ipucu yazıyor...</div>`;
+    h += `</div>` + cluesView();
+  } else if (S.phase === 'vote') {
+    const voted = S.voted.includes(myId);
+    h += cluesView() + `<div class="card p-3 mb-3"><h5>🗳️ Vampir kim?</h5>` +
+      (voted ? `<div class="text-secondary">Oyun verildi. Bekleniyor... (${S.voted.length}/${S.players.length})</div>`
+        : S.players.filter(p => p.id !== myId).map(p => `<button class="btn btn-outline-light w-100 mb-2" onclick="send({t:'vote',target:'${p.id}'})">${esc(p.name)}</button>`).join('')) + `</div>`;
+    if (myRole === 'vampir') h += `<div class="card p-3 border-danger"><div class="mb-2">🧛 Kelimeyi tahmin et (yanlışsa kaybedersin!):</div>
+      <div class="input-group"><input id="guess" class="form-control" placeholder="Gizli kelime">
+      <button class="btn btn-danger" onclick="send({t:'guess',text:document.getElementById('guess').value})">Tahmin Et</button></div></div>`;
+  } else if (S.phase === 'result') {
+    const r = S.result, iWon = (r.winner === 'vampir') === (myRole === 'vampir');
+    h += `<div class="card p-4 text-center"><div class="display-6">${iWon ? '🎉 Kazandın!' : '💀 Kaybettin'}</div>
+      <h4 class="mt-2">${r.winner === 'vampir' ? '🧛 Vampir kazandı' : '🧑‍🌾 Köylüler kazandı'}</h4>
+      <p class="text-secondary">${esc(r.reason)}</p>
+      <p>Vampir: <b>${esc(r.vampire)}</b><br>Kelime: <b>${esc(r.word)}</b></p>
+      ${isHost ? `<button class="btn btn-primary" onclick="send({t:'restart'})">🔁 Lobiye Dön</button>` : '<div class="text-secondary">Host yeni oyunu başlatacak...</div>'}</div>` + cluesView();
+  }
+  return h;
+}
+
+function sendClue() {
+  const v = document.getElementById('clue').value;
+  if (v.trim()) send({ t: 'clue', text: v });
+}
+
+/* Linkten gelen oda kodu varsa giriş ekranını doldur */
+render();
+</script>
+</body>
+</html>
+
+</body></html>
